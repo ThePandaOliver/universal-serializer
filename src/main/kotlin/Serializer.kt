@@ -16,45 +16,35 @@ import com.google.common.reflect.TypeToken
 import dev.pandasystems.universalserializer.elements.TreeElement
 import dev.pandasystems.universalserializer.elements.TreeNull
 import dev.pandasystems.universalserializer.elements.TreeObject
+import dev.pandasystems.universalserializer.formats.SerializerFormat
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapter
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory
+import dev.pandasystems.universalserializer.typeadapter.factories.*
+import java.lang.reflect.Modifier
+import java.lang.reflect.Type
 import kotlin.reflect.jvm.kotlinProperty
 
 class Serializer(
-	private val adapters: Map<TypeToken<*>, TypeAdapter<*>>,
-	private val adapterFactories: List<TypeAdapterFactory>,
-	private val prettyPrinting: Boolean
+	val format: SerializerFormat,
+
+	private val adapters: MutableMap<TypeToken<*>, TypeAdapter<*>> = mutableMapOf(),
+	private val adapterFactories: MutableList<TypeAdapterFactory> = mutableListOf(
+		StringTypeAdapterFactory(),
+		BooleanTypeAdapterFactory(),
+		NumberTypeAdapterFactory(),
+		CollectionTypeAdapterFactory(),
+		ArrayTypeAdapterFactory(),
+		MapTypeAdapterFactory()
+	)
 ) {
 	private val cachedAdapters = mutableMapOf<TypeToken<*>, TypeAdapter<*>>()
 
 	fun <T : Any> toTree(obj: T?, annotations: List<Annotation> = emptyList()): TreeElement {
-		if (obj == null) return TreeNull
-		@Suppress("UNCHECKED_CAST")
-		val type = TypeToken.of(obj::class.java) as TypeToken<T>
-
-		val adapter = getAdapter(type, annotations)
-		if (adapter != null) return adapter.encode(obj)
-
- 	val treeObject = TreeObject()
- 	type.rawType.declaredFields.forEach { field ->
- 		val mods = field.modifiers
- 		if (java.lang.reflect.Modifier.isStatic(mods) || field.isSynthetic) return@forEach
- 		val name = field.kotlinProperty?.name ?: field.name
- 		field.isAccessible = true
-
- 		val annotations = field.annotations.toList()
- 		val value = field[obj]
-
- 		@Suppress("UNCHECKED_CAST")
- 		val fieldType = TypeToken.of(field.genericType) as TypeToken<Any>
- 		treeObject[name] = toTree(value, fieldType, annotations)
- 	}
-
- 	return treeObject
+		return toTree(obj, TypeToken.of(obj?.javaClass ?: Any::class.java), annotations)
 	}
 
 	@Suppress("UNCHECKED_CAST")
-	fun toTree(obj: Any?, type: TypeToken<*>, annotations: List<Annotation> = emptyList()): TreeElement {
+	fun <T : Any> toTree(obj: T?, type: TypeToken<T>, annotations: List<Annotation> = emptyList()): TreeElement {
 		if (obj == null) return TreeNull
 		val t = type as TypeToken<Any>
 		val adapter = getAdapter(t, annotations)
@@ -63,7 +53,7 @@ class Serializer(
 		val treeObject = TreeObject()
 		t.rawType.declaredFields.forEach { field ->
 			val mods = field.modifiers
-			if (java.lang.reflect.Modifier.isStatic(mods) || field.isSynthetic) return@forEach
+			if (Modifier.isStatic(mods) || field.isSynthetic) return@forEach
 			val name = field.kotlinProperty?.name ?: field.name
 			field.isAccessible = true
 
@@ -121,17 +111,11 @@ class Serializer(
 		return result
 	}
 
-	companion object {
-		fun create(settingsBlock: SerializerSettings.() -> Unit): Serializer {
-			val settingsImpl = SerializerSettingsImpl()
-			settingsImpl.settingsBlock()
-			return Serializer(
-				adapters = settingsImpl.adapters,
-				adapterFactories = settingsImpl.adapterFactories,
-				prettyPrinting = settingsImpl.prettyPrinting
-			)
-		}
+	fun <T : Any> registerTypeAdapter(type: Class<T>, adapter: TypeAdapter<T>) = registerTypeAdapter(TypeToken.of(type), adapter)
 
-		fun create(): Serializer = create { setDefaultSettings() }
-	}
+	@Suppress("UNCHECKED_CAST")
+	fun <T : Any> registerTypeAdapter(type: Type, adapter: TypeAdapter<T>) = registerTypeAdapter(TypeToken.of(type) as TypeToken<T>, adapter)
+	fun <T : Any> registerTypeAdapter(type: TypeToken<T>, adapter: TypeAdapter<T>) = adapters.put(type, adapter)
+
+	fun registerTypeAdapterFactory(factory: TypeAdapterFactory) = adapterFactories.add(factory)
 }
