@@ -4,7 +4,9 @@ plugins {
 }
 
 group = "dev.pandasystems"
-version = "0.1.0-SNAPSHOT"
+version = "0.1.0".let { version ->
+	System.getenv("BUILD_NUMBER")?.let { "$version-$it" } ?: "$version-SNAPSHOT"
+}
 
 repositories {
 	mavenCentral()
