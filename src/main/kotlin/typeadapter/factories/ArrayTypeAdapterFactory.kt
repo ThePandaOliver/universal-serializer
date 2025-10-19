@@ -40,7 +40,7 @@ class ArrayTypeAdapterFactory : TypeAdapterFactory {
 				val len = Array.getLength(value)
 				for (i in 0 until len) {
 					val item = Array.get(value, i)
-					arr.add(serializer.toTree(item, componentToken, emptyList()))
+					arr.add(serializer.toTree(item, componentToken))
 				}
 				return arr
 			}
@@ -50,7 +50,7 @@ class ArrayTypeAdapterFactory : TypeAdapterFactory {
 				val result = Array.newInstance(componentType, element.size)
 				var i = 0
 				for (child in element) {
-					val decoded = serializer.fromTree(child, componentToken, emptyList())
+					val decoded = serializer.fromTree(child, componentToken)
 					Array.set(result, i++, decoded)
 				}
 				return result

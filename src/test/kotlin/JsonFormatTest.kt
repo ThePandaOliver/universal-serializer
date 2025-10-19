@@ -1,4 +1,3 @@
-import com.google.common.reflect.TypeToken
 import dev.pandasystems.universalserializer.Serializer
 import dev.pandasystems.universalserializer.elements.TreeArray
 import dev.pandasystems.universalserializer.elements.TreeNull
@@ -143,7 +142,7 @@ class JsonFormatTest {
 		val serializer = Serializer(format = JsonFormat(prettyPrint = true))
 		val original = T()
 		val json = serializer.toValue(original)
-		val decoded = serializer.fromValue(json, TypeToken.of(T::class.java))
+		val decoded = serializer.fromValue<T>(json)
 
 		assertNotNull(decoded)
 		assertEquals(original.i, decoded.i)

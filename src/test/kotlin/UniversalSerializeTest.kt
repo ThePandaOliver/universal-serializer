@@ -1,4 +1,3 @@
-import com.google.common.reflect.TypeToken
 import dev.pandasystems.universalserializer.Serializer
 import dev.pandasystems.universalserializer.elements.TreeArray
 import dev.pandasystems.universalserializer.elements.TreeObject
@@ -10,7 +9,7 @@ import kotlin.test.assertNotNull
 class UniversalSerializeTest {
 	@Test
 	fun serializeTest() {
-		val serializer = Serializer(format =  JsonFormat())
+		val serializer = Serializer(format = JsonFormat())
 
 		val test = TestClass()
 		val treeA = serializer.toTree(test)
@@ -32,7 +31,7 @@ class UniversalSerializeTest {
 
 	@Test
 	fun deserializeTest() {
-		val serializer = Serializer(format =  JsonFormat())
+		val serializer = Serializer(format = JsonFormat())
 
 		val tree = TreeObject()
 		tree["test"] = TreePrimitive(3)
@@ -46,7 +45,7 @@ class UniversalSerializeTest {
 			it["Java"] = TreePrimitive(0)
 		}
 
-		val obj = serializer.fromTree(tree, TypeToken.of(TestClass::class.java))
+		val obj = serializer.fromTree<TestClass>(tree)
 
 		assertNotNull(obj)
 		assert(obj.test == 3)

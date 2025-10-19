@@ -42,7 +42,7 @@ class CollectionTypeAdapterFactory : TypeAdapterFactory {
 			override fun encode(value: Collection<Any>): TreeElement {
 				val arr = TreeArray()
 				for (item in value) {
-					arr.add(serializer.toTree(item, elementType, emptyList()))
+					arr.add(serializer.toTree(item, elementType))
 				}
 				return arr
 			}
@@ -52,14 +52,14 @@ class CollectionTypeAdapterFactory : TypeAdapterFactory {
 				return if (isSet) {
 					val set = LinkedHashSet<Any>()
 					for (child in element) {
-						val decoded = serializer.fromTree(child, elementType, emptyList())
+						val decoded = serializer.fromTree(child, elementType)
 						if (decoded != null) set += decoded
 					}
 					set
 				} else {
 					val list = ArrayList<Any>()
 					for (child in element) {
-						val decoded = serializer.fromTree(child, elementType, emptyList())
+						val decoded = serializer.fromTree(child, elementType)
 						if (decoded != null) list += decoded
 					}
 					list

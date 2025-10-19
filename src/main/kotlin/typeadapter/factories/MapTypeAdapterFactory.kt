@@ -44,7 +44,7 @@ class MapTypeAdapterFactory : TypeAdapterFactory {
 			override fun encode(value: Map<String, Any>): TreeElement {
 				val obj = TreeObject()
 				for ((k, v) in value) {
-					obj[k] = serializer.toTree(v, valueToken, emptyList())
+					obj[k] = serializer.toTree(v, valueToken)
 				}
 				return obj
 			}
@@ -53,7 +53,7 @@ class MapTypeAdapterFactory : TypeAdapterFactory {
 				if (element !is TreeObject) throw IllegalArgumentException("Expected TreeObject, got ${element::class.simpleName}")
 				val map = LinkedHashMap<String, Any>()
 				for ((k, v) in element) {
-					val decoded = serializer.fromTree(v, valueToken, emptyList())
+					val decoded = serializer.fromTree(v, valueToken)
 					if (decoded != null) map[k] = decoded
 				}
 				return map
