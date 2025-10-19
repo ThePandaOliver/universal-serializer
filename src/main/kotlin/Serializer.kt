@@ -29,6 +29,7 @@ class Serializer(
 
 	private val adapters: MutableMap<TypeToken<*>, TypeAdapter<*>> = mutableMapOf(),
 	private val adapterFactories: MutableList<TypeAdapterFactory> = mutableListOf(
+		TreeElementTypeAdapterFactory(),
 		StringTypeAdapterFactory(),
 		BooleanTypeAdapterFactory(),
 		NumberTypeAdapterFactory(),
