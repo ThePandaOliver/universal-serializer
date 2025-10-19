@@ -1,0 +1,1 @@
+[![Gradle Package](https://github.com/ThePandaOliver/universal-serializer/actions/workflows/gradle-publish.yml/badge.svg)](https://github.com/ThePandaOliver/universal-serializer/actions/workflows/gradle-publish.yml)
