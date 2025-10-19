@@ -25,7 +25,7 @@ import java.lang.reflect.Type
 import kotlin.reflect.jvm.kotlinProperty
 
 class Serializer(
-	val format: SerializerFormat,
+	val format: SerializerFormat? = null,
 
 	private val adapters: MutableMap<TypeToken<*>, TypeAdapter<*>> = mutableMapOf(),
 	private val adapterFactories: MutableList<TypeAdapterFactory> = mutableListOf(
@@ -65,6 +65,11 @@ class Serializer(
 		return treeObject
 	}
 
+	fun <T : Any> toValue(obj: T?, annotations: List<Annotation> = emptyList()): String {
+		requireNotNull(format) { "format must not be null" }
+		return format.write(toTree(obj, annotations))
+	}
+
 	fun <T : Any> fromTree(element: TreeElement, type: TypeToken<T>, annotations: List<Annotation> = emptyList()): T? {
 		val clazz = type.rawType
 		if (element is TreeNull) return null
@@ -88,6 +93,11 @@ class Serializer(
 		}
 
 		return instance
+	}
+
+	fun <T : Any> fromValue(value: String, type: TypeToken<T>, annotations: List<Annotation> = emptyList()): T? {
+		requireNotNull(format) { "format must not be null" }
+		return fromTree(format.read(value), type, annotations)
 	}
 
 	@Suppress("UNCHECKED_CAST")
