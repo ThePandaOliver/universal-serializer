@@ -18,12 +18,6 @@ import dev.pandasystems.universalserializer.elements.TreeElement
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapter
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory
 
-/**
- * Provides a pass-through adapter for TreeElement types (TreeObject, TreeArray, TreePrimitive, ...).
- *
- * This enables using Serializer.fromValue(value, TypeToken.of(TreeObject::class.java)) to directly
- * obtain the parsed TreeObject instead of trying to reflectively construct a POJO.
- */
 class TreeElementTypeAdapterFactory : TypeAdapterFactory {
 	override fun createAdapter(
 		serializer: Serializer,

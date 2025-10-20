@@ -60,4 +60,14 @@ class UniversalSerializeTest {
 		var test3: List<String> = listOf("Hello", "World!")
 		var test4: Map<String, Int> = mapOf("Hello" to 0, "World" to 1)
 	}
+
+	@Test
+	fun serialize_single_value() {
+		val serializer = Serializer(format = JsonFormat())
+		val number = 2L
+		val serializedNumber = serializer.toTree(number)
+
+		assert(serializedNumber is TreePrimitive)
+		assert(serializedNumber.asPrimitive.asNumber == 2L)
+	}
 }
