@@ -35,12 +35,12 @@ class Serializer @JvmOverloads constructor(
 
 	// Serialize
 
-	inline fun <reified T : Any> toTree(obj: T): TreeElement = toTree(obj, T::class.java)
+	inline fun <reified T : Any> toTree(obj: T?): TreeElement = toTree(obj, T::class.java)
 
-	fun <T : Any> toTree(obj: T, clazz: Class<T>): TreeElement = toTree(obj, TypeToken.of(clazz))
+	fun <T : Any> toTree(obj: T?, clazz: Class<T>): TreeElement = toTree(obj, TypeToken.of(clazz))
 
 	@Suppress("UNCHECKED_CAST")
-	fun <T : Any> toTree(obj: T, typeOf: Type): TreeElement = toTree(obj, TypeToken.of(typeOf) as TypeToken<T>)
+	fun <T : Any> toTree(obj: T?, typeOf: Type): TreeElement = toTree(obj, TypeToken.of(typeOf) as TypeToken<T>)
 
 	fun <T : Any> toTree(obj: T?, typeToken: TypeToken<T>): TreeElement {
 		fun <R : Any> serializeObject(obj: R?, typeToken: TypeToken<R>, annotations: List<Annotation>): TreeElement {
