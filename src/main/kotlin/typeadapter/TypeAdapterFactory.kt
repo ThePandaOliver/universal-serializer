@@ -12,9 +12,9 @@
 
 package dev.pandasystems.universalserializer.typeadapter
 
-import com.google.common.reflect.TypeToken
 import dev.pandasystems.universalserializer.Serializer
+import kotlin.reflect.KType
 
 fun interface TypeAdapterFactory {
-	fun createAdapter(serializer: Serializer, type: TypeToken<*>, annotations: List<Annotation>): TypeAdapter<*>?
+	fun createAdapter(serializer: Serializer, type: KType, annotations: List<Annotation>): TypeAdapter<Any>?
 }

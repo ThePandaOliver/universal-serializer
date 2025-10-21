@@ -12,42 +12,34 @@
 
 package dev.pandasystems.universalserializer.typeadapter.factories
 
-import com.google.common.reflect.TypeToken
 import dev.pandasystems.universalserializer.Serializer
 import dev.pandasystems.universalserializer.elements.TreeElement
 import dev.pandasystems.universalserializer.elements.TreePrimitive
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapter
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory
+import kotlin.reflect.KClass
+import kotlin.reflect.KType
 
 class NumberTypeAdapterFactory : TypeAdapterFactory {
 	override fun createAdapter(
 		serializer: Serializer,
-		type: TypeToken<*>,
+		type: KType,
 		annotations: List<Annotation>
-	): TypeAdapter<*>? {
-		val raw = type.rawType
-		// Support boxed and primitive numeric types
-		val boxed: Class<out Number>? = when (raw) {
-			java.lang.Byte::class.java, java.lang.Byte.TYPE -> java.lang.Byte::class.java
-			java.lang.Short::class.java, java.lang.Short.TYPE -> java.lang.Short::class.java
-			java.lang.Integer::class.java, java.lang.Integer.TYPE -> java.lang.Integer::class.java
-			java.lang.Long::class.java, java.lang.Long.TYPE -> java.lang.Long::class.java
-			java.lang.Float::class.java, java.lang.Float.TYPE -> java.lang.Float::class.java
-			java.lang.Double::class.java, java.lang.Double.TYPE -> java.lang.Double::class.java
-			else -> if (Number::class.java.isAssignableFrom(raw)) raw.asSubclass(Number::class.java) else null
-		}
-		boxed ?: return null
+	): TypeAdapter<Any>? {
+		val kClass = type.classifier as? KClass<*> ?: return null
+		val boxed = kClass.javaObjectType
+		if (!Number::class.java.isAssignableFrom(boxed)) return null
 		@Suppress("UNCHECKED_CAST")
 		val numberClazz = boxed as Class<Number>
-		return object : TypeAdapter<Number> {
-			override fun encode(value: Number): TreeElement {
+		return object : TypeAdapter<Any> {
+			override fun encode(value: Any): TreeElement {
+				require(value is Number) { "Expected Number, got ${value::class.simpleName}" }
 				return TreePrimitive(value)
 			}
 
-			override fun decode(element: TreeElement): Number {
+			override fun decode(element: TreeElement): Any {
 				require(element is TreePrimitive) { "Expected TreePrimitive, got ${element::class.simpleName}" }
 				val n = element.asNumber
-				// Convert to the requested boxed type when necessary
 				return when (numberClazz) {
 					java.lang.Byte::class.java -> java.lang.Byte.valueOf(n.toByte())
 					java.lang.Short::class.java -> java.lang.Short.valueOf(n.toShort())

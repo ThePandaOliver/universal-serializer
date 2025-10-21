@@ -12,48 +12,49 @@
 
 package dev.pandasystems.universalserializer.typeadapter.factories
 
-import com.google.common.reflect.TypeToken
 import dev.pandasystems.universalserializer.Serializer
 import dev.pandasystems.universalserializer.elements.TreeElement
 import dev.pandasystems.universalserializer.elements.TreeObject
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapter
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory
-import java.lang.reflect.ParameterizedType
+import kotlin.reflect.KClass
+import kotlin.reflect.KType
+import kotlin.reflect.full.createType
+import kotlin.reflect.full.isSubclassOf
 
 class MapTypeAdapterFactory : TypeAdapterFactory {
 	override fun createAdapter(
 		serializer: Serializer,
-		type: TypeToken<*>,
+		type: KType,
 		annotations: List<Annotation>
-	): TypeAdapter<*>? {
-		val raw = type.rawType
-		if (!java.util.Map::class.java.isAssignableFrom(raw)) return null
+	): TypeAdapter<Any>? {
+		val kClass = type.classifier as? KClass<*> ?: return null
+		if (!kClass.isSubclassOf(Map::class)) return null
 
-		val t = type.type
-		if (t !is ParameterizedType) return null
-		val keyType = t.actualTypeArguments[0]
-		val valueType = t.actualTypeArguments[1]
+		val args = type.arguments
+		if (args.size != 2) return null
+		val keyType = args[0].type ?: return null
+		val valueType: KType = args[1].type ?: Any::class.createType()
 
 		// Only support String keys to encode to TreeObject fields
-		if (keyType != String::class.java) return null
+		val keyClassifier = keyType.classifier as? KClass<*> ?: return null
+		if (keyClassifier != String::class) return null
 
-		@Suppress("UNCHECKED_CAST")
-		val valueToken = TypeToken.of(valueType) as TypeToken<Any>
-
-		return object : TypeAdapter<Map<String, Any>> {
-			override fun encode(value: Map<String, Any>): TreeElement {
+		return object : TypeAdapter<Any> {
+			override fun encode(value: Any): TreeElement {
+				require(value is Map<*, *>) { "Expected Map, got ${value::class.simpleName}" }
 				val obj = TreeObject()
 				for ((k, v) in value) {
-					obj[k] = serializer.toTree(v, valueToken)
+					obj[k as String] = serializer.toTree(v, valueType)
 				}
 				return obj
 			}
 
-			override fun decode(element: TreeElement): Map<String, Any> {
+			override fun decode(element: TreeElement): Any {
 				if (element !is TreeObject) throw IllegalArgumentException("Expected TreeObject, got ${element::class.simpleName}")
 				val map = LinkedHashMap<String, Any>()
 				for ((k, v) in element) {
-					val decoded = serializer.fromTree(v, valueToken)
+					val decoded = serializer.fromTree(v, valueType)
 					if (decoded != null) map[k] = decoded
 				}
 				return map

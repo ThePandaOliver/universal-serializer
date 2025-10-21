@@ -12,22 +12,23 @@
 
 package dev.pandasystems.universalserializer.typeadapter.factories
 
-import com.google.common.reflect.TypeToken
 import dev.pandasystems.universalserializer.Serializer
 import dev.pandasystems.universalserializer.elements.TreeElement
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapter
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory
+import kotlin.reflect.KClass
+import kotlin.reflect.KType
+import kotlin.reflect.full.isSubclassOf
 
 class TreeElementTypeAdapterFactory : TypeAdapterFactory {
 	override fun createAdapter(
 		serializer: Serializer,
-		type: TypeToken<*>,
+		type: KType,
 		annotations: List<Annotation>
-	): TypeAdapter<*>? {
-		val raw = type.rawType
-		if (!TreeElement::class.java.isAssignableFrom(raw)) return null
+	): TypeAdapter<Any>? {
+		val kClass = type.classifier as? KClass<*> ?: return null
+		if (!kClass.isSubclassOf(TreeElement::class)) return null
 
-		@Suppress("UNCHECKED_CAST")
 		return object : TypeAdapter<Any> {
 			override fun encode(value: Any): TreeElement {
 				require(value is TreeElement) { "Expected TreeElement, got ${value::class.java.name}" }
@@ -35,9 +36,8 @@ class TreeElementTypeAdapterFactory : TypeAdapterFactory {
 			}
 
 			override fun decode(element: TreeElement): Any {
-				// Ensure we return exactly the requested subtype when possible
-				if (!raw.isInstance(element)) {
-					throw IllegalArgumentException("Expected ${raw.name}, got ${element::class.java.name}")
+				if (!kClass.java.isInstance(element)) {
+					throw IllegalArgumentException("Expected ${kClass.java.name}, got ${element::class.java.name}")
 				}
 				return element
 			}

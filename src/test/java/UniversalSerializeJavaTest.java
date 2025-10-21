@@ -4,9 +4,15 @@ import dev.pandasystems.universalserializer.elements.TreeElement;
 import dev.pandasystems.universalserializer.elements.TreeObject;
 import dev.pandasystems.universalserializer.elements.TreePrimitive;
 import dev.pandasystems.universalserializer.formats.JsonFormat;
+import dev.pandasystems.universalserializer.typeadapter.TypeAdapter;
+import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory;
+import kotlin.reflect.KType;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 

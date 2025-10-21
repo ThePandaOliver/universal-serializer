@@ -12,23 +12,28 @@
 
 package dev.pandasystems.universalserializer.typeadapter.factories
 
-import com.google.common.reflect.TypeToken
 import dev.pandasystems.universalserializer.Serializer
 import dev.pandasystems.universalserializer.elements.TreeElement
 import dev.pandasystems.universalserializer.elements.TreePrimitive
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapter
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory
+import kotlin.reflect.KClass
+import kotlin.reflect.KType
 
 class StringTypeAdapterFactory : TypeAdapterFactory {
 	override fun createAdapter(
 		serializer: Serializer,
-		type: TypeToken<*>,
+		type: KType,
 		annotations: List<Annotation>
-	): TypeAdapter<*>? {
-		if (type.rawType != String::class.java) return null
-		return object : TypeAdapter<String> {
-			override fun encode(value: String): TreeElement = TreePrimitive(value)
-			override fun decode(element: TreeElement): String {
+	): TypeAdapter<Any>? {
+		val kClass = type.classifier as? KClass<*> ?: return null
+		if (kClass != String::class) return null
+		return object : TypeAdapter<Any> {
+			override fun encode(value: Any): TreeElement {
+				require(value is String) { "Expected String, got ${value::class.simpleName}" }
+				return TreePrimitive(value)
+			}
+			override fun decode(element: TreeElement): Any {
 				require(element is TreePrimitive) { "Expected TreePrimitive, got ${element::class.simpleName}" }
 				return element.asString
 			}
