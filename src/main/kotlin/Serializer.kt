@@ -35,13 +35,12 @@ class Serializer @JvmOverloads constructor(
 
 	// Serialize
 
-	inline fun <reified T> toTree(obj: T): TreeElement = toTree(obj, T::class.java)
+	inline fun <reified T : Any> toTree(obj: T): TreeElement = toTree(obj, T::class.java)
+
+	fun <T : Any> toTree(obj: T, clazz: Class<T>): TreeElement = toTree(obj, TypeToken.of(clazz))
 
 	@Suppress("UNCHECKED_CAST")
-	fun <T> toTree(obj: T, clazz: Class<T>): TreeElement = toTree(obj, TypeToken.of(clazz) as TypeToken<Any>)
-
-	@Suppress("UNCHECKED_CAST")
-	fun <T> toTree(obj: T, typeOf: Type): TreeElement = toTree(obj, TypeToken.of(typeOf) as TypeToken<Any>)
+	fun <T : Any> toTree(obj: T, typeOf: Type): TreeElement = toTree(obj, TypeToken.of(typeOf) as TypeToken<T>)
 
 	fun <T : Any> toTree(obj: T?, typeToken: TypeToken<T>): TreeElement {
 		fun <R : Any> serializeObject(obj: R?, typeToken: TypeToken<R>, annotations: List<Annotation>): TreeElement {
@@ -59,9 +58,9 @@ class Serializer @JvmOverloads constructor(
 
 				val annotations = field.annotations.toList()
 				val value = field[obj]
-				val fieldType = TypeToken.of(field.genericType)
 				@Suppress("UNCHECKED_CAST")
-				treeObject[name] = serializeObject(value, fieldType as TypeToken<Any>, annotations)
+				val fieldType = TypeToken.of(field.genericType) as TypeToken<Any>
+				treeObject[name] = serializeObject(value, fieldType, annotations)
 			}
 			return treeObject
 		}
@@ -69,13 +68,12 @@ class Serializer @JvmOverloads constructor(
 		return serializeObject(obj, typeToken, emptyList())
 	}
 
-	inline fun <reified T> toValue(obj: T): String = toValue(obj, T::class.java)
+	inline fun <reified T : Any> toValue(obj: T): String = toValue(obj, T::class.java)
+
+	fun <T : Any> toValue(obj: T, clazz: Class<T>): String = toValue(obj, TypeToken.of(clazz))
 
 	@Suppress("UNCHECKED_CAST")
-	fun <T> toValue(obj: T, clazz: Class<T>): String = toValue(obj, TypeToken.of(clazz) as TypeToken<Any>)
-
-	@Suppress("UNCHECKED_CAST")
-	fun <T> toValue(obj: T, typeOf: Type): String = toValue(obj, TypeToken.of(typeOf) as TypeToken<Any>)
+	fun <T : Any> toValue(obj: T, typeOf: Type): String = toValue(obj, TypeToken.of(typeOf) as TypeToken<T>)
 
 	fun <T : Any> toValue(obj: T?, typeToken: TypeToken<T>): String {
 		requireNotNull(format) { "format was not specified" }
@@ -139,13 +137,12 @@ class Serializer @JvmOverloads constructor(
 
 	// Adapters
 
-	@Suppress("UNCHECKED_CAST")
-	fun <T> getAdapter(clazz: Class<T>, annotations: List<Annotation> = emptyList()): TypeAdapter<T>? =
-		getAdapter(TypeToken.of(clazz), annotations) as TypeAdapter<T>?
+	fun <T : Any> getAdapter(clazz: Class<T>, annotations: List<Annotation> = emptyList()): TypeAdapter<T>? =
+		getAdapter(TypeToken.of(clazz), annotations)
 
 	@Suppress("UNCHECKED_CAST")
-	fun <T> getAdapter(typeOf: Type, annotations: List<Annotation> = emptyList()): TypeAdapter<T>? =
-		getAdapter(TypeToken.of(typeOf), annotations) as? TypeAdapter<T>?
+	fun <T : Any> getAdapter(typeOf: Type, annotations: List<Annotation> = emptyList()): TypeAdapter<T>? =
+		getAdapter(TypeToken.of(typeOf), annotations) as? TypeAdapter<T>
 
 	@Suppress("UNCHECKED_CAST")
 	fun <T : Any> getAdapter(typeToken: TypeToken<T>, annotations: List<Annotation> = emptyList()): TypeAdapter<T>? {
