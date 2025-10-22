@@ -182,6 +182,7 @@ class Serializer @JvmOverloads constructor(
 			StringTypeAdapterFactory(),
 			BooleanTypeAdapterFactory(),
 			NumberTypeAdapterFactory(),
+			EnumTypeAdapterFactory(),
 			CollectionTypeAdapterFactory(),
 			ArrayTypeAdapterFactory(),
 			MapTypeAdapterFactory()
