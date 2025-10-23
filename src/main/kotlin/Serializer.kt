@@ -21,7 +21,7 @@ import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory
 import dev.pandasystems.universalserializer.typeadapter.factories.*
 import kotlin.reflect.*
 import kotlin.reflect.full.createType
-import kotlin.reflect.full.declaredMemberProperties
+import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
 
 class Serializer @JvmOverloads constructor(
@@ -49,7 +49,7 @@ class Serializer @JvmOverloads constructor(
 			val treeObject = TreeObject()
 			val classifier = type.classifier
 			if (classifier is KClass<*>) {
-				for (property in classifier.declaredMemberProperties) {
+				for (property in classifier.memberProperties) {
 					@Suppress("UNCHECKED_CAST")
 					val property = property as KProperty1<Any, Any?>
 					property.isAccessible = true
@@ -97,9 +97,10 @@ class Serializer @JvmOverloads constructor(
 					val instance = classifier.constructors.firstOrNull { it.parameters.isEmpty() }?.call()
 						?: classifier.objectInstance ?: throw IllegalArgumentException("No empty constructor or object instance for $classifier")
 
-					for (property in classifier.declaredMemberProperties) {
+ 				for (prop in classifier.memberProperties) {
+						if (prop !is KMutableProperty1<*, *>) continue
 						@Suppress("UNCHECKED_CAST")
-						val property = property as KMutableProperty1<Any, Any?>
+						val property = prop as KMutableProperty1<Any, Any?>
 						property.isAccessible = true
 
 						val valueElement = element[property.name] ?: continue

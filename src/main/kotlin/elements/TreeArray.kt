@@ -105,7 +105,7 @@ class TreeArray : TreeElement, MutableList<TreeElement> {
 	}
 
 	override fun toString(): String {
-		return elements.joinToString(", ", "{", "}") { element -> element.toString() }
+		return elements.joinToString(", ", "[", "]") { element -> element.toString() }
 	}
 
 	override fun equals(other: Any?): Boolean {
