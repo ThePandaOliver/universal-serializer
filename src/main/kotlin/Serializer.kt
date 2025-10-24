@@ -20,6 +20,7 @@ import dev.pandasystems.universalserializer.typeadapter.TypeAdapter
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory
 import dev.pandasystems.universalserializer.typeadapter.factories.*
 import kotlin.reflect.*
+import kotlin.reflect.full.createInstance
 import kotlin.reflect.full.createType
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
@@ -94,8 +95,7 @@ class Serializer @JvmOverloads constructor(
 			if (element is TreeObject) {
 				val classifier = type.classifier
 				if (classifier is KClass<*>) {
-					val instance = classifier.constructors.firstOrNull { it.parameters.isEmpty() }?.call()
-						?: classifier.objectInstance ?: throw IllegalArgumentException("No empty constructor or object instance for $classifier")
+					val instance = classifier.objectInstance ?: classifier.createInstance()
 
  				for (prop in classifier.memberProperties) {
 						if (prop !is KMutableProperty1<*, *>) continue
