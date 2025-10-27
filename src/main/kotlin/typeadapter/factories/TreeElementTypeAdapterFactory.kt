@@ -20,7 +20,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KType
 import kotlin.reflect.full.isSubclassOf
 
-class TreeElementTypeAdapterFactory : TypeAdapterFactory {
+object TreeElementTypeAdapterFactory : TypeAdapterFactory {
 	override fun createAdapter(
 		serializer: Serializer,
 		type: KType,
@@ -35,7 +35,7 @@ class TreeElementTypeAdapterFactory : TypeAdapterFactory {
 				return value
 			}
 
-			override fun decode(element: TreeElement): Any {
+			override fun decode(element: TreeElement, oldValue: Any?): Any {
 				if (!kClass.java.isInstance(element)) {
 					throw IllegalArgumentException("Expected ${kClass.java.name}, got ${element::class.java.name}")
 				}

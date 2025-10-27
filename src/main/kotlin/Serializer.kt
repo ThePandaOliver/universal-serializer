@@ -79,25 +79,31 @@ class Serializer @JvmOverloads constructor(
 
 	// Deserialize
 
-	inline fun <reified T> fromTree(element: TreeElement): T? = fromTree(element, typeOf<T>()) as T?
-	@Suppress("UNCHECKED_CAST")
-	fun <T : Any> fromTree(element: TreeElement, clazz: Class<T>): T? = fromTree(element, clazz.kotlin.createType()) as T?
-	@Suppress("UNCHECKED_CAST")
-	fun <T : Any> fromTree(element: TreeElement, kClass: KClass<T>): T? = fromTree(element, kClass.createType()) as T?
+	@JvmOverloads
+	inline fun <reified T> fromTree(element: TreeElement, oldValue: Any? = null): T? = fromTree(element, typeOf<T>()) as T?
 
-	fun fromTree(element: TreeElement, type: KType): Any? {
-		fun deserializeObject(element: TreeElement, type: KType, annotations: List<Annotation>): Any? {
+	@Suppress("UNCHECKED_CAST")
+	@JvmOverloads
+	fun <T : Any> fromTree(element: TreeElement, clazz: Class<T>, oldValue: Any? = null): T? = fromTree(element, clazz.kotlin.createType()) as T?
+
+	@Suppress("UNCHECKED_CAST")
+	@JvmOverloads
+	fun <T : Any> fromTree(element: TreeElement, kClass: KClass<T>, oldValue: Any? = null): T? = fromTree(element, kClass.createType()) as T?
+
+	@JvmOverloads
+	fun fromTree(element: TreeElement, type: KType, oldValue: Any? = null): Any? {
+		fun deserializeObject(element: TreeElement, type: KType, annotations: List<Annotation>, oldValue: Any?): Any? {
 			if (element is TreeNull) return null
 
 			val adapter = getAdapter(type, annotations)
-			if (adapter != null) return adapter.decode(element)
+			if (adapter != null) return adapter.decode(element, oldValue)
 
 			if (element is TreeObject) {
 				val classifier = type.classifier
 				if (classifier is KClass<*>) {
-					val instance = classifier.objectInstance ?: classifier.createInstance()
+					val instance = oldValue ?: classifier.objectInstance ?: classifier.createInstance()
 
- 				for (prop in classifier.memberProperties) {
+					for (prop in classifier.memberProperties) {
 						if (prop !is KMutableProperty1<*, *>) continue
 						@Suppress("UNCHECKED_CAST")
 						val property = prop as KMutableProperty1<Any, Any?>
@@ -105,8 +111,9 @@ class Serializer @JvmOverloads constructor(
 
 						val valueElement = element[property.name] ?: continue
 						val fieldType = property.returnType
+						val propValue = property.get(instance)
 
-						property.set(instance, deserializeObject(valueElement, fieldType, property.annotations))
+						property.set(instance, deserializeObject(valueElement, fieldType, property.annotations, propValue))
 					}
 
 					return instance
@@ -115,12 +122,14 @@ class Serializer @JvmOverloads constructor(
 
 			throw IllegalArgumentException("Cannot deserialize $element into $type")
 		}
-		return deserializeObject(element, type, emptyList())
+		return deserializeObject(element, type, emptyList(), oldValue)
 	}
 
 	inline fun <reified T> fromValue(value: String): T? = fromValue(value, typeOf<T>()) as T?
+
 	@Suppress("UNCHECKED_CAST")
 	fun <T : Any> fromValue(value: String, clazz: Class<T>): T? = fromValue(value, clazz.kotlin.createType()) as T?
+
 	@Suppress("UNCHECKED_CAST")
 	fun <T : Any> fromValue(value: String, kClass: KClass<T>): T? = fromValue(value, kClass.createType()) as T?
 
@@ -133,16 +142,22 @@ class Serializer @JvmOverloads constructor(
 	// Adapters
 
 	@Suppress("UNCHECKED_CAST")
+	@JvmOverloads
 	inline fun <reified T : Any> getAdapter(annotations: List<Annotation> = emptyList()): TypeAdapter<T>? =
 		getAdapter(typeOf<T>(), annotations) as? TypeAdapter<T>
+
 	@Suppress("UNCHECKED_CAST")
+	@JvmOverloads
 	fun <T : Any> getAdapter(clazz: Class<T>, annotations: List<Annotation> = emptyList()): TypeAdapter<T>? =
 		getAdapter(clazz.kotlin.createType(), annotations) as? TypeAdapter<T>
+
 	@Suppress("UNCHECKED_CAST")
+	@JvmOverloads
 	fun <T : Any> getAdapter(kClass: KClass<T>, annotations: List<Annotation> = emptyList()): TypeAdapter<T>? =
 		getAdapter(kClass.createType(), annotations) as? TypeAdapter<T>
 
 	@Suppress("UNCHECKED_CAST")
+	@JvmOverloads
 	fun getAdapter(type: KType, annotations: List<Annotation> = emptyList()): TypeAdapter<Any>? {
 		val cached = cachedAdapters[type]
 		if (cached != null) return cached
@@ -165,8 +180,10 @@ class Serializer @JvmOverloads constructor(
 
 	@Suppress("UNCHECKED_CAST")
 	inline fun <reified T : Any> registerTypeAdapter(adapter: TypeAdapter<T>) = registerTypeAdapter(typeOf<T>(), adapter as TypeAdapter<Any>) as T
+
 	@Suppress("UNCHECKED_CAST")
 	fun <T : Any> registerTypeAdapter(clazz: Class<T>, adapter: TypeAdapter<T>) = registerTypeAdapter(clazz.kotlin.createType(), adapter as TypeAdapter<Any>)
+
 	@Suppress("UNCHECKED_CAST")
 	fun <T : Any> registerTypeAdapter(kClass: KClass<T>, adapter: TypeAdapter<T>) = registerTypeAdapter(kClass.createType(), adapter as TypeAdapter<Any>)
 
@@ -179,14 +196,14 @@ class Serializer @JvmOverloads constructor(
 	companion object {
 		@JvmStatic
 		val DEFAULT_TYPE_ADAPTER_FACTORIES = listOf(
-			TreeElementTypeAdapterFactory(),
-			StringTypeAdapterFactory(),
-			BooleanTypeAdapterFactory(),
-			NumberTypeAdapterFactory(),
-			EnumTypeAdapterFactory(),
-			CollectionTypeAdapterFactory(),
-			ArrayTypeAdapterFactory(),
-			MapTypeAdapterFactory()
+			TreeElementTypeAdapterFactory,
+			StringTypeAdapterFactory,
+			BooleanTypeAdapterFactory,
+			NumberTypeAdapterFactory,
+			EnumTypeAdapterFactory,
+			CollectionTypeAdapterFactory,
+			ArrayTypeAdapterFactory,
+			MapTypeAdapterFactory
 		)
 	}
 }

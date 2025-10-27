@@ -22,7 +22,7 @@ import kotlin.reflect.KType
 import kotlin.reflect.full.createType
 import kotlin.reflect.full.isSubclassOf
 
-class MapTypeAdapterFactory : TypeAdapterFactory {
+object MapTypeAdapterFactory : TypeAdapterFactory {
 	override fun createAdapter(
 		serializer: Serializer,
 		type: KType,
@@ -50,7 +50,7 @@ class MapTypeAdapterFactory : TypeAdapterFactory {
 				return obj
 			}
 
-			override fun decode(element: TreeElement): Any {
+			override fun decode(element: TreeElement, oldValue: Any?): Any {
 				if (element !is TreeObject) throw IllegalArgumentException("Expected TreeObject, got ${element::class.simpleName}")
 				val map = LinkedHashMap<String, Any>()
 				for ((k, v) in element) {

@@ -22,7 +22,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KType
 import kotlin.reflect.full.createType
 
-class ArrayTypeAdapterFactory : TypeAdapterFactory {
+object ArrayTypeAdapterFactory : TypeAdapterFactory {
 	override fun createAdapter(
 		serializer: Serializer,
 		type: KType,
@@ -47,7 +47,7 @@ class ArrayTypeAdapterFactory : TypeAdapterFactory {
 				return arr
 			}
 
-			override fun decode(element: TreeElement): Any {
+			override fun decode(element: TreeElement, oldValue: Any?): Any {
 				require(element is TreeArray) { "Expected TreeArray, got ${element::class.simpleName}" }
 				val result = Array.newInstance(componentClass, element.size)
 				var i = 0

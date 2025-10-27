@@ -20,7 +20,7 @@ import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 
-class NumberTypeAdapterFactory : TypeAdapterFactory {
+object NumberTypeAdapterFactory : TypeAdapterFactory {
 	override fun createAdapter(
 		serializer: Serializer,
 		type: KType,
@@ -37,7 +37,7 @@ class NumberTypeAdapterFactory : TypeAdapterFactory {
 				return TreePrimitive(value)
 			}
 
-			override fun decode(element: TreeElement): Any {
+			override fun decode(element: TreeElement, oldValue: Any?): Any {
 				require(element is TreePrimitive) { "Expected TreePrimitive, got ${element::class.simpleName}" }
 				val n = element.asNumber
 				return when (numberClazz) {

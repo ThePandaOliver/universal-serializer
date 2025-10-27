@@ -20,7 +20,7 @@ import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 
-class BooleanTypeAdapterFactory : TypeAdapterFactory {
+object BooleanTypeAdapterFactory : TypeAdapterFactory {
 	override fun createAdapter(
 		serializer: Serializer,
 		type: KType,
@@ -33,7 +33,8 @@ class BooleanTypeAdapterFactory : TypeAdapterFactory {
 				require(value is Boolean) { "Expected Boolean, got ${value::class.simpleName}" }
 				return TreePrimitive(value)
 			}
-			override fun decode(element: TreeElement): Any {
+
+			override fun decode(element: TreeElement, oldValue: Any?): Any {
 				require(element is TreePrimitive) { "Expected TreePrimitive, got ${element::class.simpleName}" }
 				return element.asBoolean
 			}

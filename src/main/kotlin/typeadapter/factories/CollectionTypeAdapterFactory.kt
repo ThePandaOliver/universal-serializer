@@ -22,7 +22,7 @@ import kotlin.reflect.KType
 import kotlin.reflect.full.createType
 import kotlin.reflect.full.isSubclassOf
 
-class CollectionTypeAdapterFactory : TypeAdapterFactory {
+object CollectionTypeAdapterFactory : TypeAdapterFactory {
 	override fun createAdapter(
 		serializer: Serializer,
 		type: KType,
@@ -44,7 +44,7 @@ class CollectionTypeAdapterFactory : TypeAdapterFactory {
 				return arr
 			}
 
-			override fun decode(element: TreeElement): Any {
+			override fun decode(element: TreeElement, oldValue: Any?): Any {
 				require(element is TreeArray) { "Expected TreeArray, got ${element::class.simpleName}" }
 				return if (isSet) {
 					val set = LinkedHashSet<Any>()

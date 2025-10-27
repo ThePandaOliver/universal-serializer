@@ -20,7 +20,7 @@ import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 
-class EnumTypeAdapterFactory : TypeAdapterFactory {
+object EnumTypeAdapterFactory : TypeAdapterFactory {
 	override fun createAdapter(
 		serializer: Serializer,
 		type: KType,
@@ -39,7 +39,7 @@ class EnumTypeAdapterFactory : TypeAdapterFactory {
 				return TreePrimitive(value.name)
 			}
 
-			override fun decode(element: TreeElement): Any {
+			override fun decode(element: TreeElement, oldValue: Any?): Any {
 				require(element is TreePrimitive) { "Expected TreePrimitive, got ${element::class.simpleName}" }
 				val name = element.asString
 				return java.lang.Enum.valueOf(enumClass, name)
