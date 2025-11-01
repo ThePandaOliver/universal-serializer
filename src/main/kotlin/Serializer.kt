@@ -79,29 +79,25 @@ class Serializer @JvmOverloads constructor(
 
 	// Deserialize
 
-	@JvmOverloads
-	inline fun <reified T> fromTree(element: TreeElement, oldValue: Any? = null): T? = fromTree(element, typeOf<T>()) as T?
+	inline fun <reified T> fromTree(element: TreeElement): T? = fromTree(element, typeOf<T>()) as T?
 
 	@Suppress("UNCHECKED_CAST")
-	@JvmOverloads
-	fun <T : Any> fromTree(element: TreeElement, clazz: Class<T>, oldValue: Any? = null): T? = fromTree(element, clazz.kotlin.createType()) as T?
+	fun <T : Any> fromTree(element: TreeElement, clazz: Class<T>): T? = fromTree(element, clazz.kotlin.createType()) as T?
 
 	@Suppress("UNCHECKED_CAST")
-	@JvmOverloads
-	fun <T : Any> fromTree(element: TreeElement, kClass: KClass<T>, oldValue: Any? = null): T? = fromTree(element, kClass.createType()) as T?
+	fun <T : Any> fromTree(element: TreeElement, kClass: KClass<T>): T? = fromTree(element, kClass.createType()) as T?
 
-	@JvmOverloads
-	fun fromTree(element: TreeElement, type: KType, oldValue: Any? = null): Any? {
-		fun deserializeObject(element: TreeElement, type: KType, annotations: List<Annotation>, oldValue: Any?): Any? {
+	fun fromTree(element: TreeElement, type: KType): Any? {
+		fun deserializeObject(element: TreeElement, type: KType, annotations: List<Annotation>, oldInstance: Any? = null): Any? {
 			if (element is TreeNull) return null
 
 			val adapter = getAdapter(type, annotations)
-			if (adapter != null) return adapter.decode(element, oldValue)
+			if (adapter != null) return adapter.decode(element, oldInstance)
 
 			if (element is TreeObject) {
 				val classifier = type.classifier
 				if (classifier is KClass<*>) {
-					val instance = oldValue ?: classifier.objectInstance ?: classifier.createInstance()
+					val instance = classifier.objectInstance ?: classifier.createInstance()
 
 					for (prop in classifier.memberProperties) {
 						if (prop !is KMutableProperty1<*, *>) continue
@@ -122,7 +118,7 @@ class Serializer @JvmOverloads constructor(
 
 			throw IllegalArgumentException("Cannot deserialize $element into $type")
 		}
-		return deserializeObject(element, type, emptyList(), oldValue)
+		return deserializeObject(element, type, emptyList())
 	}
 
 	inline fun <reified T> fromValue(value: String): T? = fromValue(value, typeOf<T>()) as T?
