@@ -12,34 +12,31 @@
 
 package dev.pandasystems.universalserializer.typeadapter.factories
 
-import com.google.common.reflect.TypeToken
 import dev.pandasystems.universalserializer.Serializer
 import dev.pandasystems.universalserializer.elements.TreeArray
 import dev.pandasystems.universalserializer.elements.TreeElement
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapter
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory
-import java.lang.reflect.ParameterizedType
+import kotlin.reflect.KClass
+import kotlin.reflect.KType
+import kotlin.reflect.full.createType
+import kotlin.reflect.full.isSubclassOf
 
-class CollectionTypeAdapterFactory : TypeAdapterFactory {
-	@Suppress("UNCHECKED_CAST")
+object CollectionTypeAdapterFactory : TypeAdapterFactory {
 	override fun createAdapter(
 		serializer: Serializer,
-		type: TypeToken<*>,
+		type: KType,
 		annotations: List<Annotation>
-	): TypeAdapter<*>? {
-		val raw = type.rawType
-		if (!java.util.Collection::class.java.isAssignableFrom(raw)) return null
+	): TypeAdapter<Any>? {
+		val kClass = type.classifier as? KClass<*> ?: return null
+		if (!kClass.isSubclassOf(Collection::class)) return null
 
-		// Determine element type
-		val elementType = when (val t = type.type) {
-			is ParameterizedType -> TypeToken.of(t.actualTypeArguments[0])
-			else -> TypeToken.of(Any::class.java)
-		} as TypeToken<Any>
+		val elementType: KType = type.arguments.firstOrNull()?.type ?: Any::class.createType()
+		val isSet = kClass.isSubclassOf(Set::class)
 
-		val isSet = java.util.Set::class.java.isAssignableFrom(raw)
-
-		return object : TypeAdapter<Collection<Any>> {
-			override fun encode(value: Collection<Any>): TreeElement {
+		return object : TypeAdapter<Any> {
+			override fun encode(value: Any): TreeElement {
+				require(value is Collection<*>) { "Expected Collection, got ${value::class.simpleName}" }
 				val arr = TreeArray()
 				for (item in value) {
 					arr.add(serializer.toTree(item, elementType))
@@ -47,7 +44,7 @@ class CollectionTypeAdapterFactory : TypeAdapterFactory {
 				return arr
 			}
 
-			override fun decode(element: TreeElement): Collection<Any> {
+			override fun decode(element: TreeElement, oldValue: Any?): Any {
 				require(element is TreeArray) { "Expected TreeArray, got ${element::class.simpleName}" }
 				return if (isSet) {
 					val set = LinkedHashSet<Any>()

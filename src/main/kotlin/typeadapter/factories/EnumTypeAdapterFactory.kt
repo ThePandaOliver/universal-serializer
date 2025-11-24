@@ -7,7 +7,7 @@
  *  any later version.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *  along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package dev.pandasystems.universalserializer.typeadapter.factories
@@ -20,23 +20,29 @@ import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
 
-object StringTypeAdapterFactory : TypeAdapterFactory {
+object EnumTypeAdapterFactory : TypeAdapterFactory {
 	override fun createAdapter(
 		serializer: Serializer,
 		type: KType,
 		annotations: List<Annotation>
 	): TypeAdapter<Any>? {
 		val kClass = type.classifier as? KClass<*> ?: return null
-		if (kClass != String::class) return null
+		val raw = kClass.java
+		if (!raw.isEnum) return null
+
+		@Suppress("UNCHECKED_CAST")
+		val enumClass = raw as Class<out Enum<*>>
+
 		return object : TypeAdapter<Any> {
 			override fun encode(value: Any): TreeElement {
-				require(value is String) { "Expected String, got ${value::class.simpleName}" }
-				return TreePrimitive(value)
+				require(value is Enum<*>) { "Expected Enum, got ${value::class.simpleName}" }
+				return TreePrimitive(value.name)
 			}
 
 			override fun decode(element: TreeElement, oldValue: Any?): Any {
 				require(element is TreePrimitive) { "Expected TreePrimitive, got ${element::class.simpleName}" }
-				return element.asString
+				val name = element.asString
+				return java.lang.Enum.valueOf(enumClass, name)
 			}
 		}
 	}

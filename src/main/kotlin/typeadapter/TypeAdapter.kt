@@ -14,7 +14,7 @@ package dev.pandasystems.universalserializer.typeadapter
 
 import dev.pandasystems.universalserializer.elements.TreeElement
 
-interface TypeAdapter<T> {
+interface TypeAdapter<T : Any> {
 	fun encode(value: T): TreeElement
-	fun decode(element: TreeElement): T
+	fun decode(element: TreeElement, oldValue: T?): T
 }

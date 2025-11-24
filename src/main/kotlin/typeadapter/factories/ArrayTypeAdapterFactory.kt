@@ -12,26 +12,28 @@
 
 package dev.pandasystems.universalserializer.typeadapter.factories
 
-import com.google.common.reflect.TypeToken
 import dev.pandasystems.universalserializer.Serializer
 import dev.pandasystems.universalserializer.elements.TreeArray
 import dev.pandasystems.universalserializer.elements.TreeElement
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapter
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory
 import java.lang.reflect.Array
+import kotlin.reflect.KClass
+import kotlin.reflect.KType
+import kotlin.reflect.full.createType
 
-class ArrayTypeAdapterFactory : TypeAdapterFactory {
+object ArrayTypeAdapterFactory : TypeAdapterFactory {
 	override fun createAdapter(
 		serializer: Serializer,
-		type: TypeToken<*>,
+		type: KType,
 		annotations: List<Annotation>
-	): TypeAdapter<*>? {
-		val raw = type.rawType
+	): TypeAdapter<Any>? {
+		val classifier = type.classifier as? KClass<*> ?: return null
+		val raw = classifier.java
 		if (!raw.isArray) return null
 
-		val componentType = raw.componentType
-		@Suppress("UNCHECKED_CAST")
-		val componentToken = TypeToken.of(componentType) as TypeToken<Any>
+		val componentClass = raw.componentType
+		val componentKType = componentClass.kotlin.createType()
 
 		return object : TypeAdapter<Any> {
 			override fun encode(value: Any): TreeElement {
@@ -40,17 +42,17 @@ class ArrayTypeAdapterFactory : TypeAdapterFactory {
 				val len = Array.getLength(value)
 				for (i in 0 until len) {
 					val item = Array.get(value, i)
-					arr.add(serializer.toTree(item, componentToken))
+					arr.add(serializer.toTree(item, componentKType))
 				}
 				return arr
 			}
 
-			override fun decode(element: TreeElement): Any {
+			override fun decode(element: TreeElement, oldValue: Any?): Any {
 				require(element is TreeArray) { "Expected TreeArray, got ${element::class.simpleName}" }
-				val result = Array.newInstance(componentType, element.size)
+				val result = Array.newInstance(componentClass, element.size)
 				var i = 0
 				for (child in element) {
-					val decoded = serializer.fromTree(child, componentToken)
+					val decoded = serializer.fromTree(child, componentKType)
 					Array.set(result, i++, decoded)
 				}
 				return result

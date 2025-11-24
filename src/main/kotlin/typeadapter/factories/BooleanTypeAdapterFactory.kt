@@ -12,23 +12,29 @@
 
 package dev.pandasystems.universalserializer.typeadapter.factories
 
-import com.google.common.reflect.TypeToken
 import dev.pandasystems.universalserializer.Serializer
 import dev.pandasystems.universalserializer.elements.TreeElement
 import dev.pandasystems.universalserializer.elements.TreePrimitive
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapter
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory
+import kotlin.reflect.KClass
+import kotlin.reflect.KType
 
-class BooleanTypeAdapterFactory : TypeAdapterFactory {
+object BooleanTypeAdapterFactory : TypeAdapterFactory {
 	override fun createAdapter(
 		serializer: Serializer,
-		type: TypeToken<*>,
+		type: KType,
 		annotations: List<Annotation>
-	): TypeAdapter<*>? {
-		if (type.rawType != java.lang.Boolean::class.java && type.rawType != Boolean::class.javaPrimitiveType) return null
-		return object : TypeAdapter<Boolean> {
-			override fun encode(value: Boolean): TreeElement = TreePrimitive(value)
-			override fun decode(element: TreeElement): Boolean {
+	): TypeAdapter<Any>? {
+		val kClass = type.classifier as? KClass<*> ?: return null
+		if (kClass != Boolean::class) return null
+		return object : TypeAdapter<Any> {
+			override fun encode(value: Any): TreeElement {
+				require(value is Boolean) { "Expected Boolean, got ${value::class.simpleName}" }
+				return TreePrimitive(value)
+			}
+
+			override fun decode(element: TreeElement, oldValue: Any?): Any {
 				require(element is TreePrimitive) { "Expected TreePrimitive, got ${element::class.simpleName}" }
 				return element.asBoolean
 			}

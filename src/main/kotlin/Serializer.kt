@@ -12,7 +12,6 @@
 
 package dev.pandasystems.universalserializer
 
-import com.google.common.reflect.TypeToken
 import dev.pandasystems.universalserializer.elements.TreeElement
 import dev.pandasystems.universalserializer.elements.TreeNull
 import dev.pandasystems.universalserializer.elements.TreeObject
@@ -20,172 +19,187 @@ import dev.pandasystems.universalserializer.formats.SerializerFormat
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapter
 import dev.pandasystems.universalserializer.typeadapter.TypeAdapterFactory
 import dev.pandasystems.universalserializer.typeadapter.factories.*
-import java.lang.reflect.Modifier
-import java.lang.reflect.Type
-import kotlin.reflect.jvm.kotlinProperty
+import kotlin.reflect.*
+import kotlin.reflect.full.createInstance
+import kotlin.reflect.full.createType
+import kotlin.reflect.full.memberProperties
+import kotlin.reflect.jvm.isAccessible
 
 class Serializer @JvmOverloads constructor(
 	val format: SerializerFormat? = null,
 
-	private val adapters: MutableMap<TypeToken<*>, TypeAdapter<*>> = mutableMapOf(),
+	private val adapters: MutableMap<KType, TypeAdapter<Any>> = mutableMapOf(),
 	private val adapterFactories: MutableList<TypeAdapterFactory> = DEFAULT_TYPE_ADAPTER_FACTORIES.toMutableList()
 ) {
-	private val cachedAdapters = mutableMapOf<TypeToken<*>, TypeAdapter<*>>()
+	private val cachedAdapters = mutableMapOf<KType, TypeAdapter<Any>>()
 
 
 	// Serialize
 
-	inline fun <reified T : Any> toTree(obj: T?): TreeElement = toTree(obj, T::class.java)
+	inline fun <reified T> toTree(obj: T): TreeElement = toTree(obj, typeOf<T>())
+	fun <T : Any> toTree(obj: T?, clazz: Class<T>): TreeElement = toTree(obj, clazz.kotlin.createType())
+	fun <T : Any> toTree(obj: T?, kClass: KClass<T>): TreeElement = toTree(obj, kClass.createType())
 
-	fun <T : Any> toTree(obj: T?, clazz: Class<T>): TreeElement = toTree(obj, TypeToken.of(clazz))
-
-	@Suppress("UNCHECKED_CAST")
-	fun <T : Any> toTree(obj: T?, typeOf: Type): TreeElement = toTree(obj, TypeToken.of(typeOf) as TypeToken<T>)
-
-	fun <T : Any> toTree(obj: T?, typeToken: TypeToken<T>): TreeElement {
-		fun <R : Any> serializeObject(obj: R?, typeToken: TypeToken<R>, annotations: List<Annotation>): TreeElement {
+	fun toTree(obj: Any?, type: KType): TreeElement {
+		fun serializeObject(obj: Any?, type: KType, annotations: List<Annotation>): TreeElement {
 			if (obj == null) return TreeNull
-			val adapter = getAdapter(typeToken, annotations)
+
+			val adapter = getAdapter(type, annotations)
 			if (adapter != null) return adapter.encode(obj)
 
 			val treeObject = TreeObject()
-			val raw = typeToken.rawType
-			for (field in raw.declaredFields) {
-				val mods = field.modifiers
-				if (Modifier.isStatic(mods) || field.isSynthetic) break
-				field.isAccessible = true
-				val name = field.kotlinProperty?.name ?: field.name
+			val classifier = type.classifier
+			if (classifier is KClass<*>) {
+				for (property in classifier.memberProperties) {
+					@Suppress("UNCHECKED_CAST")
+					val property = property as KProperty1<Any, Any?>
+					property.isAccessible = true
 
-				val annotations = field.annotations.toList()
-				val value = field[obj]
-				@Suppress("UNCHECKED_CAST")
-				val fieldType = TypeToken.of(field.genericType) as TypeToken<Any>
-				treeObject[name] = serializeObject(value, fieldType, annotations)
+					val value = property.get(obj)
+					val fieldType = property.returnType
+					treeObject[property.name] = serializeObject(value, fieldType, property.annotations)
+				}
 			}
+
 			return treeObject
 		}
 
-		return serializeObject(obj, typeToken, emptyList())
+		return serializeObject(obj, type, emptyList())
 	}
 
-	inline fun <reified T : Any> toValue(obj: T): String = toValue(obj, T::class.java)
+	inline fun <reified T> toValue(obj: T): String = toValue(obj, typeOf<T>())
+	fun <T : Any> toValue(obj: T?, clazz: Class<T>): String = toValue(obj, clazz.kotlin.createType())
+	fun <T : Any> toValue(obj: T?, kClass: KClass<T>): String = toValue(obj, kClass.createType())
 
-	fun <T : Any> toValue(obj: T, clazz: Class<T>): String = toValue(obj, TypeToken.of(clazz))
-
-	@Suppress("UNCHECKED_CAST")
-	fun <T : Any> toValue(obj: T, typeOf: Type): String = toValue(obj, TypeToken.of(typeOf) as TypeToken<T>)
-
-	fun <T : Any> toValue(obj: T?, typeToken: TypeToken<T>): String {
+	fun toValue(obj: Any?, type: KType): String {
 		requireNotNull(format) { "format was not specified" }
-		return format.write(toTree(obj, typeToken))
+		return format.write(toTree(obj, type))
 	}
 
 
 	// Deserialize
 
-	inline fun <reified T : Any> fromTree(element: TreeElement): T? = fromTree(element, T::class.java)
-
-	fun <T : Any> fromTree(element: TreeElement, clazz: Class<T>): T? = fromTree(element, TypeToken.of(clazz))
+	inline fun <reified T> fromTree(element: TreeElement): T? = fromTree(element, typeOf<T>()) as T?
 
 	@Suppress("UNCHECKED_CAST")
-	fun <T : Any> fromTree(element: TreeElement, typeOf: Type): T? = fromTree(element, TypeToken.of(typeOf) as TypeToken<T>)
+	fun <T : Any> fromTree(element: TreeElement, clazz: Class<T>): T? = fromTree(element, clazz.kotlin.createType()) as T?
 
-	fun <T : Any> fromTree(element: TreeElement, typeToken: TypeToken<T>): T? {
-		fun <R : Any> deserializeObject(element: TreeElement, typeToken: TypeToken<R>, annotations: List<Annotation>): R? {
+	@Suppress("UNCHECKED_CAST")
+	fun <T : Any> fromTree(element: TreeElement, kClass: KClass<T>): T? = fromTree(element, kClass.createType()) as T?
+
+	fun fromTree(element: TreeElement, type: KType): Any? {
+		fun deserializeObject(element: TreeElement, type: KType, annotations: List<Annotation>, oldInstance: Any? = null): Any? {
 			if (element is TreeNull) return null
 
-			val adapter = getAdapter(typeToken, annotations)
-			if (adapter != null) return adapter.decode(element)
+			val adapter = getAdapter(type, annotations)
+			if (adapter != null) return adapter.decode(element, oldInstance)
 
-			val raw = typeToken.rawType as Class<R>
 			if (element is TreeObject) {
-				val instance = raw.getConstructor().newInstance()
+				val classifier = type.classifier
+				if (classifier is KClass<*>) {
+					val instance = classifier.objectInstance ?: classifier.createInstance()
 
-				for (field in raw.declaredFields) {
-					val mods = field.modifiers
-					if (Modifier.isStatic(mods) || field.isSynthetic) break
-					field.isAccessible = true
-					val name = field.kotlinProperty?.name ?: field.name
+					for (prop in classifier.memberProperties) {
+						if (prop !is KMutableProperty1<*, *>) continue
+						@Suppress("UNCHECKED_CAST")
+						val property = prop as KMutableProperty1<Any, Any?>
+						property.isAccessible = true
 
-					val annotations = field.annotations.toList()
-					val valueElement = element[name] ?: continue
-					val fieldType = TypeToken.of(field.genericType)
+						val valueElement = element[property.name] ?: continue
+						val fieldType = property.returnType
+						val propValue = property.get(instance)
 
-					field[instance] = deserializeObject(valueElement, fieldType, annotations)
+						property.set(instance, deserializeObject(valueElement, fieldType, property.annotations, propValue))
+					}
+
+					return instance
 				}
-
-				return instance
 			}
 
-			throw IllegalArgumentException("Cannot deserialize $element into ${raw.canonicalName}")
+			throw IllegalArgumentException("Cannot deserialize $element into $type")
 		}
-		return deserializeObject(element, typeToken, emptyList())
+		return deserializeObject(element, type, emptyList())
 	}
 
-	inline fun <reified T : Any> fromValue(value: String): T? = fromValue(value, T::class.java)
-
-	fun <T : Any> fromValue(value: String, clazz: Class<T>): T? = fromValue(value, TypeToken.of(clazz))
+	inline fun <reified T> fromValue(value: String): T? = fromValue(value, typeOf<T>()) as T?
 
 	@Suppress("UNCHECKED_CAST")
-	fun <T : Any> fromValue(value: String, typeOf: Type): T? = fromValue(value, TypeToken.of(typeOf) as TypeToken<T>)
+	fun <T : Any> fromValue(value: String, clazz: Class<T>): T? = fromValue(value, clazz.kotlin.createType()) as T?
 
-	fun <T : Any> fromValue(value: String, typeToken: TypeToken<T>): T? {
+	@Suppress("UNCHECKED_CAST")
+	fun <T : Any> fromValue(value: String, kClass: KClass<T>): T? = fromValue(value, kClass.createType()) as T?
+
+	fun fromValue(value: String, type: KType): Any? {
 		requireNotNull(format) { "format was not specified" }
-		return fromTree(format.read(value), typeToken)
+		return fromTree(format.read(value), type)
 	}
 
 
 	// Adapters
 
+	@Suppress("UNCHECKED_CAST")
+	@JvmOverloads
+	inline fun <reified T : Any> getAdapter(annotations: List<Annotation> = emptyList()): TypeAdapter<T>? =
+		getAdapter(typeOf<T>(), annotations) as? TypeAdapter<T>
+
+	@Suppress("UNCHECKED_CAST")
+	@JvmOverloads
 	fun <T : Any> getAdapter(clazz: Class<T>, annotations: List<Annotation> = emptyList()): TypeAdapter<T>? =
-		getAdapter(TypeToken.of(clazz), annotations)
+		getAdapter(clazz.kotlin.createType(), annotations) as? TypeAdapter<T>
 
 	@Suppress("UNCHECKED_CAST")
-	fun <T : Any> getAdapter(typeOf: Type, annotations: List<Annotation> = emptyList()): TypeAdapter<T>? =
-		getAdapter(TypeToken.of(typeOf), annotations) as? TypeAdapter<T>
+	@JvmOverloads
+	fun <T : Any> getAdapter(kClass: KClass<T>, annotations: List<Annotation> = emptyList()): TypeAdapter<T>? =
+		getAdapter(kClass.createType(), annotations) as? TypeAdapter<T>
 
 	@Suppress("UNCHECKED_CAST")
-	fun <T : Any> getAdapter(typeToken: TypeToken<T>, annotations: List<Annotation> = emptyList()): TypeAdapter<T>? {
-		val cached = cachedAdapters[typeToken] as? TypeAdapter<T>
+	@JvmOverloads
+	fun getAdapter(type: KType, annotations: List<Annotation> = emptyList()): TypeAdapter<Any>? {
+		val cached = cachedAdapters[type]
 		if (cached != null) return cached
 
-		var found: TypeAdapter<*>? = null
+		var found: TypeAdapter<Any>? = null
 		for (factory in adapterFactories) {
-			val created = factory.createAdapter(this, typeToken, annotations)
+			val created = factory.createAdapter(this, type, annotations)
 			if (created != null) {
 				found = created
 				break
 			}
 		}
 
-		val result = (found as? TypeAdapter<T>) ?: (adapters[typeToken] as? TypeAdapter<T>)
+		val result = found ?: adapters[type]
 		if (result != null) {
-			cachedAdapters[typeToken] = result
+			cachedAdapters[type] = result
 		}
 		return result
 	}
 
-	inline fun <reified T : Any> registerTypeAdapter(adapter: TypeAdapter<T>) = registerTypeAdapter(TypeToken.of(T::class.java), adapter)
-
-	fun <T : Any> registerTypeAdapter(clazz: Class<T>, adapter: TypeAdapter<T>) = registerTypeAdapter(TypeToken.of(clazz), adapter)
+	@Suppress("UNCHECKED_CAST")
+	inline fun <reified T : Any> registerTypeAdapter(adapter: TypeAdapter<T>) = registerTypeAdapter(typeOf<T>(), adapter as TypeAdapter<Any>) as T
 
 	@Suppress("UNCHECKED_CAST")
-	fun <T : Any> registerTypeAdapter(typeOf: Type, adapter: TypeAdapter<T>) = registerTypeAdapter(TypeToken.of(typeOf) as TypeToken<T>, adapter)
+	fun <T : Any> registerTypeAdapter(clazz: Class<T>, adapter: TypeAdapter<T>) = registerTypeAdapter(clazz.kotlin.createType(), adapter as TypeAdapter<Any>)
 
-	fun <T : Any> registerTypeAdapter(typeToken: TypeToken<T>, adapter: TypeAdapter<T>) = adapters.put(typeToken, adapter)
+	@Suppress("UNCHECKED_CAST")
+	fun <T : Any> registerTypeAdapter(kClass: KClass<T>, adapter: TypeAdapter<T>) = registerTypeAdapter(kClass.createType(), adapter as TypeAdapter<Any>)
+
+	fun registerTypeAdapter(type: KType, adapter: TypeAdapter<Any>) {
+		adapters[type] = adapter
+	}
 
 	fun registerTypeAdapterFactory(factory: TypeAdapterFactory) = adapterFactories.add(factory)
 
 	companion object {
 		@JvmStatic
 		val DEFAULT_TYPE_ADAPTER_FACTORIES = listOf(
-			TreeElementTypeAdapterFactory(),
-			StringTypeAdapterFactory(),
-			BooleanTypeAdapterFactory(),
-			NumberTypeAdapterFactory(),
-			CollectionTypeAdapterFactory(),
-			ArrayTypeAdapterFactory(),
-			MapTypeAdapterFactory()
+			TreeElementTypeAdapterFactory,
+			StringTypeAdapterFactory,
+			BooleanTypeAdapterFactory,
+			NumberTypeAdapterFactory,
+			EnumTypeAdapterFactory,
+			CollectionTypeAdapterFactory,
+			ArrayTypeAdapterFactory,
+			MapTypeAdapterFactory
 		)
 	}
 }

@@ -25,6 +25,11 @@ class UniversalSerializeTest {
 			it["Hello"] = TreePrimitive(0)
 			it["World"] = TreePrimitive(1)
 		}
+		treeB["test5"] = TreeObject().also {
+			it["hello"] = TreePrimitive(0)
+			it["world"] = TreePrimitive(1)
+		}
+		treeB["test6"] = TreePrimitive("A")
 
 		assert(treeA == treeB)
 	}
@@ -44,6 +49,11 @@ class UniversalSerializeTest {
 			it["Goodbye"] = TreePrimitive(1)
 			it["Java"] = TreePrimitive(0)
 		}
+		tree["test5"] = TreeObject().also {
+			it["hello"] = TreePrimitive(0)
+			it["world"] = TreePrimitive(1)
+		}
+		tree["test6"] = TreePrimitive("A")
 
 		val obj = serializer.fromTree<TestClass>(tree)
 
@@ -52,6 +62,9 @@ class UniversalSerializeTest {
 		assert(obj.test2 == "Goodbye Java!")
 		assert(obj.test3 == listOf("Goodbye", "Java!"))
 		assert(obj.test4 == mapOf("Goodbye" to 1, "Java" to 0))
+		assert(obj.test5.hello == 0)
+		assert(obj.test5.world == 1)
+		assert(obj.test6 == TestClass.TestEnum.A)
 	}
 
 	class TestClass {
@@ -59,6 +72,23 @@ class UniversalSerializeTest {
 		var test2: String = "Hello World!"
 		var test3: List<String> = listOf("Hello", "World!")
 		var test4: Map<String, Int> = mapOf("Hello" to 0, "World" to 1)
+
+		val test5: InnerTestClass = InnerTestClass()
+
+		var test6: TestEnum = TestEnum.A
+
+		class InnerTestClass : AbstractTestClass() {
+			override var hello: Int = 0
+		}
+
+		abstract class AbstractTestClass {
+			abstract var hello: Int
+			var world: Int = 1
+		}
+
+		enum class TestEnum {
+			A, B, C
+		}
 	}
 
 	@Test
