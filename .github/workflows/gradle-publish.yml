@@ -20,6 +20,10 @@ jobs:
       contents: read
       packages: write
 
+    env:
+      NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+      NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 21
@@ -43,6 +47,3 @@ jobs:
       # the publishing section of your build.gradle
       - name: Publish to GitHub Packages
         run: ./gradlew publish
-        env:
-          GITHUB_USER: ${{ github.actor }}
-          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
