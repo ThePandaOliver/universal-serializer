@@ -4,9 +4,7 @@ plugins {
 }
 
 group = "dev.pandasystems"
-version = "0.1.0".let { version ->
-	System.getenv("BUILD_NUMBER")?.let { "$version.$it" } ?: "$version-SNAPSHOT"
-}
+version = "0.1.0-SNAPSHOT"
 
 repositories {
 	mavenCentral()
@@ -37,12 +35,11 @@ publishing {
 	}
 
 	repositories {
-		maven {
-			name = "GitHubPackages"
-			url = uri("https://maven.pkg.github.com/ThePandaOliver/universal-serializer")
+		maven("https://repo.pandasystems.dev/repository/maven-snapshots/") {
+			name = "PandasRepository"
 			credentials {
-				username = System.getenv("GITHUB_USER")
-				password = System.getenv("GITHUB_API_TOKEN")
+				username = System.getenv("NEXUS_USERNAME")
+				password = System.getenv("NEXUS_PASSWORD")
 			}
 		}
 	}
