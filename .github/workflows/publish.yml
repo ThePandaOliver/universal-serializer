@@ -20,5 +20,8 @@ jobs:
           java-version: "24"
           cache: "gradle"
 
+      - name: Set gradlew permission
+        run: chmod +x gradlew
+
       - name: Build and Publish
         run: ./gradlew clean build publish
