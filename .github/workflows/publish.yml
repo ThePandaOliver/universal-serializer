@@ -20,7 +20,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: print name
-        run: echo "Nexus username $NEXUS_USERNAME"
+        run: echo "Nexus username ${{ vars.NEXUS_USERNAME }}"
 
       - name: Build and Publish
         run: ./gradlew clean build publish
