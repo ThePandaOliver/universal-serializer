@@ -21,4 +21,4 @@ jobs:
           cache: "gradle"
 
       - name: Build and Publish
-        run: gradlew clean build publish
+        run: ./gradlew clean build publish
