@@ -36,20 +36,18 @@ publishing {
 
 	repositories {
 		maven("https://repo.pandasystems.dev/repository/maven-snapshots/") {
-			name = "PandasSnapshotRepository"
+			name = "Snapshot"
 			credentials {
 				username = System.getenv("NEXUS_USERNAME")
 				password = System.getenv("NEXUS_PASSWORD")
 			}
 		}
 
-		if (!version.toString().endsWith("SNAPSHOT")) {
-			maven("https://repo.pandasystems.dev/repository/maven-releases/") {
-				name = "PandasReleaseRepository"
-				credentials {
-					username = System.getenv("NEXUS_USERNAME")
-					password = System.getenv("NEXUS_PASSWORD")
-				}
+		maven("https://repo.pandasystems.dev/repository/maven-releases/") {
+			name = "Release"
+			credentials {
+				username = System.getenv("NEXUS_USERNAME")
+				password = System.getenv("NEXUS_PASSWORD")
 			}
 		}
 	}
